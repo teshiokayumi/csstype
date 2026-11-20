@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSSタイピング練習 ― WordPress初心者のスタイル勉強</title>
+<!--
+  ============================================================
+  問題の追加方法
+  ------------------------------------------------------------
+  ① このファイルの下の方にある「const LESSONS = [ ... ]」に
+     { cat: 'カテゴリ名', title: 'タイトル', note: '説明', code: `CSSコード` },
+     を1行（1ブロック）追加するだけで問題が増えます。
+     ・誤答例など「普段は隠したい問題」には ng: true を付けます。
+  ② ファイルを触らずに、画面左下の「＋ 自分のCSSを追加」から
+     貼り付けて追加することもできます（このブラウザに保存されます）。
+  ============================================================
+-->
+<style>
+  :root{
+    --bg:#1b1d27; --panel:#232634; --panel2:#2b2f40; --line:#363b50;
+    --text:#e6e8f0; --muted:#8a90a8; --dim:#5b6178;
+    --accent:#ff7eb6; --accent2:#7ec8ff; --ok:#8be38b; --err:#ff5c7a; --auto:#4a5068;
+    --mono:"Cascadia Code","Consolas","Menlo","Source Han Code JP","Noto Sans Mono CJK JP",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;letter-spacing:.04em}
+  header h1 span{color:var(--accent)}
+  .opts{display:flex;gap:14px;margin-left:auto;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .opts label{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
+  .opts input{accent-color:var(--accent)}
+  main{flex:1;display:flex;min-height:0}
+  aside{width:290px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  #lessonList{flex:1;overflow:auto;padding:8px 0}
+  .cat{font-size:11px;color:var(--muted);padding:12px 16px 4px;letter-spacing:.08em}
+  .lesson{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;font-size:13px;border-left:3px solid transparent}
+  .lesson:hover{background:var(--panel)}
+  .lesson.active{background:var(--panel2);border-left-color:var(--accent)}
+  .lesson .num{color:var(--dim);font-family:var(--mono);font-size:11px;width:22px}
+  .lesson .t{flex:1;line-height:1.35}
+  .lesson .ngtag{font-size:10px;color:#ffb36b;border:1px solid #6b4a2a;border-radius:4px;padding:0 4px;margin-left:4px}
+  .lesson .best{font-size:10px;color:var(--ok);font-family:var(--mono);white-space:nowrap}
+  .lesson .del{color:var(--dim);font-size:12px;padding:0 2px}
+  .lesson .del:hover{color:var(--err)}
+  .aside-foot{padding:10px;border-top:1px solid var(--line)}
+  button{font:inherit;cursor:pointer;border:none;border-radius:8px}
+  .btn{background:var(--panel2);color:var(--text);padding:8px 14px;font-size:13px}
+  .btn:hover{background:#353a50}
+  .btn.primary{background:var(--accent);color:#2a1020;font-weight:700}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.block{width:100%}
+  section#stage{flex:1;display:flex;flex-direction:column;min-width:0;padding:18px 24px;gap:14px}
+  .stage-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .stage-head h2{margin:0;font-size:18px}
+  .stage-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .stats{display:flex;gap:10px;margin-left:auto}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 12px;min-width:78px;text-align:center}
+  .stat b{display:block;font-family:var(--mono);font-size:18px}
+  .stat small{color:var(--muted);font-size:10px}
+  .progress{height:4px;background:var(--panel2);border-radius:4px;overflow:hidden}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .15s}
+  #editorWrap{position:relative;flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;cursor:text}
+  #editorWrap.focused{border-color:#5a5f82;box-shadow:0 0 0 3px rgba(255,126,182,.12)}
+  #code{margin:0;padding:20px 24px 60px;font-family:var(--mono);font-size:17px;line-height:1.75;white-space:pre;color:var(--dim)}
+  #code span{border-radius:2px}
+  #code .ok{color:var(--ok)}
+  #code .auto{color:var(--auto)}
+  #code .miss{color:var(--err);background:rgba(255,92,122,.15)}
+  #code .cur{background:var(--accent);color:#1b1d27;animation:blink 1s steps(1) infinite}
+  #code .cur.flash{background:var(--err);animation:none}
+  #code .nl::before{content:"↵";color:var(--line)}
+  #code .nl.cur::before{color:#1b1d27}
+  #code .nl.ok::before{color:#3f6a45}
+  @keyframes blink{50%{background:rgba(255,126,182,.35)}}
+  #hiddenInput{position:absolute;opacity:0;left:0;top:0;width:1px;height:1px;border:0;padding:0;resize:none}
+  #overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(27,29,39,.6);font-size:15px;color:var(--text);pointer-events:none}
+  #overlay kbd{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-family:var(--mono)}
+  .hint{font-size:12px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+  .hint kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-family:var(--mono);font-size:11px;color:var(--text)}
+  dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:560px;width:92%}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  dialog h3{margin:0 0 12px}
+  dialog input[type=text],dialog textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;margin-bottom:10px}
+  dialog textarea{font-family:var(--mono);font-size:13px;height:240px;resize:vertical}
+  .dlg-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+  .result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+  .result-grid .stat b{font-size:22px}
+  .newbest{color:var(--accent);font-weight:700;font-size:14px}
+  .rank{font-size:40px;text-align:center;margin:4px 0}
+  @media (max-width:820px){
+    main{flex-direction:column}
+    aside{width:auto;max-height:34vh;border-right:none;border-bottom:1px solid var(--line)}
+    .stats{margin-left:0}
+    #code{font-size:14px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>CSS</span> タイピング練習</h1>
+  <div class="opts">
+    <label><input type="checkbox" id="optComments"> コメントも打つ</label>
+    <label><input type="checkbox" id="optIndent" checked> インデント自動</label>
+    <label><input type="checkbox" id="optNg"> 誤答例も表示</label>
+  </div>
+</header>
+<main>
+  <aside>
+    <div id="lessonList"></div>
+    <div class="aside-foot"><button class="btn block" id="addBtn">＋ 自分のCSSを追加</button></div>
+  </aside>
+  <section id="stage">
+    <div class="stage-head">
+      <div>
+        <h2 id="lTitle"></h2>
+        <p id="lNote"></p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sTime">0.0</b><small>秒</small></div>
+        <div class="stat"><b id="sCpm">0</b><small>文字/分</small></div>
+        <div class="stat"><b id="sAcc">100</b><small>正確率 %</small></div>
+        <div class="stat"><b id="sMiss">0</b><small>ミス</small></div>
+      </div>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div id="editorWrap">
+      <pre id="code"></pre>
+      <textarea id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div id="overlay">ここをクリックしてスタート（半角英数モードで打ってね）</div>
+    </div>
+    <div class="hint">
+      <span><kbd>Enter</kbd> 改行</span>
+      <span><kbd>Esc</kbd> 最初からやり直し</span>
+      <span><kbd>Ctrl</kbd>+<kbd>→</kbd> 次の問題</span>
+      <span>ミスした文字は正しく打つまで進みません</span>
+      <span>「＞」は半角「&gt;」でもOK</span>
+    </div>
+  </section>
+</main>
+
+<dialog id="addDlg">
+  <h3>自分のCSSを追加</h3>
+  <input type="text" id="addTitle" placeholder="タイトル（例：ヘッダーの固定）">
+  <input type="text" id="addNote" placeholder="メモ（任意）">
+  <textarea id="addCode" placeholder=".example {&#10;  color: red;&#10;}"></textarea>
+  <div class="dlg-btns">
+    <button class="btn" id="addCancel">キャンセル</button>
+    <button class="btn primary" id="addSave">追加する</button>
+  </div>
+</dialog>
+
+<dialog id="resDlg">
+  <h3 id="resTitle">クリア！</h3>
+  <div class="rank" id="resRank"></div>
+  <div class="result-grid">
+    <div class="stat"><b id="rTime"></b><small>秒</small></div>
+    <div class="stat"><b id="rCpm"></b><small>文字/分</small></div>
+    <div class="stat"><b id="rAcc"></b><small>正確率 %</small></div>
+    <div class="stat"><b id="rMiss"></b><small>ミス</small></div>
+  </div>
+  <p id="resBest" style="margin:0 0 6px;font-size:13px;color:var(--muted)"></p>
+  <p id="resMissKeys" style="margin:0;font-size:13px;color:var(--muted)"></p>
+  <div class="dlg-btns">
+    <button class="btn" id="resRetry">もう一回（R）</button>
+    <button class="btn primary" id="resNext">次の問題へ（Enter）</button>
+  </div>
+</dialog>
+
+<script>
+/* =========================================================
+   問題データ（ここに追加していけばOK）
+   ng: true → 誤答例（「誤答例も表示」をONにしたときだけ出る）
+   ========================================================= */
+const LESSONS = [
+{ cat:'ボックスモデル', title:'content-box と border-box', note:'width に padding・border を含めるかどうかの違い。',
+code:`.custom-button {
+  display: inline-block; /* 箱として扱う設定 */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}` },
+{ cat:'ボックスモデル', title:'margin で下に幅をつくる', note:'display: block にして、margin-bottom で外側に隙間を作る。',
+code:`.custom-button {
+  display: block; /* ← block に変更して単独の段にする */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+  margin-bottom: 30px; /* ← 下の外側に30pxの隙間を作る */
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}` },
+{ cat:'詳細度', title:'詳細度① a → .custom-button の順', note:'タグ名（1点）よりクラス名（10点）が強い。',
+code:`.custom-button {
+  display: block; /* ← block に変更して単独の段にする */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+  margin-bottom: 30px; /* ← 下の外側に30pxの隙間を作る */
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}
+a {
+  background-color: yellow; /* ① タグ名で指定（黄色） */
+}
+.custom-button {
+  background-color: lightblue; /* ② クラス名で指定（水色） */
+}` },
+{ cat:'詳細度', title:'詳細度② 書く順番を入れ替え', note:'順番を入れ替えても、詳細度が高いクラス名が勝つ。',
+code:`.custom-button {
+  display: block; /* ← block に変更して単独の段にする */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+  margin-bottom: 30px; /* ← 下の外側に30pxの隙間を作る */
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}
+.custom-button {
+  background-color: lightblue; /* ② クラス名で指定（水色） */
+}
+a {
+  background-color: yellow; /* ① タグ名で指定（黄色） */
+}` },
+{ cat:'詳細度', title:'body を使って詳細度を上げる', note:'body .custom-button（1点＋10点）は .custom-button より強い。',
+code:`.custom-button {
+  display: block; /* ← block に変更して単独の段にする */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+  margin-bottom: 30px; /* ← 下の外側に30pxの隙間を作る */
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}
+body .custom-button {
+  background-color: orange;
+}
+.custom-button {
+  background-color: lightblue;
+}` },
+{ cat:'WordPress', title:'WordPressのボタンの色を変える', note:'初期スタイル（20点）に勝つには body を足して21点にする。',
+code:`/* WordPressの初期スタイル（10点＋10点＝20点） */
+.wp-block-button .wp-block-button__link {
+  background-color: gray;
+  color: white;
+}
+/* 10点しかないため負けてしまう */
+.wp-block-button__link {
+  background-color: pink;
+}
+body .wp-block-button .wp-block-button__link {
+  background-color: pink;
+}` },
+{ cat:'Flexbox', title:'カードの基本スタイル', note:'まずはカード1枚の見た目を作る。',
+code:`.card {
+  border: 2px solid #333;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+.card-list {
+  display: flex;
+}` },
+{ cat:'Flexbox', title:'カードを均等に横並び', note:'flex: 1 で均等幅、gap で隙間。',
+code:`.card {
+  border: 2px solid #333;
+  padding: 20px;
+  background-color: #f9f9f9;
+  flex: 1;
+}
+.card-list {
+  display: flex;
+  gap: 20px;
+}` },
+{ cat:'レスポンシブ', title:'メディアクエリでスマホは縦並び', note:'768px以下のときだけ flex-direction: column。',
+code:`/* 画面幅が768px以下のときだけ適用される */
+@media (max-width: 768px) {
+  .card-list {
+    flex-direction: column; /* 並び方向を縦（column）に変える */
+  }
+}` },
+{ cat:'position', title:'バッジのピン止め（問題のCSS）', note:'position: absolute で右上に固定。基準は relative の親。',
+code:`.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: red;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+}` },
+{ cat:'position', ng:true, title:'親に relative を付けた誤答例', note:'.card-list に付けると、リスト全体の右上に行ってしまう。',
+code:`.card-list {
+  display: flex;
+  gap: 20px;
+  position: relative;
+}` },
+{ cat:'position', ng:true, title:'別の親クラスを使った試行例', note:'存在しないクラス名 .card-list-list に書いても効かない。',
+code:`.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: red;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.card-list-list {
+  border: 2px solid #333;
+  padding: 20px;
+  background-color: #f9f9f9;
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  position: relative;
+}` },
+{ cat:'position', title:'正解：.card に relative を追加', note:'元の .card に1行足すだけ。',
+code:`.card {
+  border: 2px solid #333;
+  padding: 20px;
+  background-color: #f9f9f9;
+  flex: 1;
+  position: relative; /* ← 元の .card にこの1行を足すだけでOK！ */
+}` },
+{ cat:'CSS Grid', title:'Grid 基本の3行', note:'display: grid / grid-template-columns / gap。',
+code:`.icon-grid {
+  display: grid;                         /* ① グリッドレイアウトにする */
+  grid-template-columns: repeat(3, 1fr); /* ② 横に「均等幅（1fr）で3列」並べる */
+  gap: 20px;                             /* ③ 上下左右の隙間を20px空ける */
+}` },
+{ cat:'CSS Grid', ng:true, title:'2列の誤答例（flex-direction）', note:'Grid に flex-direction は効かない。',
+code:`.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 3fr);
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .icon-grid {
+    flex-direction: column;
+  }
+}` },
+{ cat:'CSS Grid', title:'PCとスマホで列数を切り替え', note:'スマホでは grid-template-columns を 1fr に上書き。',
+code:`/* PC：横に2列（6個なら自動で2列×3段になる） */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* スマホ：横に1列（6個なら自動で縦1列×6段になる） */
+@media (max-width: 768px) {
+  .icon-grid {
+    grid-template-columns: 1fr; /* または repeat(1, 1fr) */
+  }
+}` },
+{ cat:'CSS Grid', ng:true, title:'3段階切り替えの誤答例', note:'@media の前に body は書けない。',
+code:`.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+body @media (max-width: 480px) {
+  .icon-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}` },
+{ cat:'CSS Grid', title:'3段階切り替え（修正後）', note:'body はセレクタ側（@media の中）に書く。',
+code:`@media (max-width: 480px) {
+  body .icon-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}` },
+{ cat:'CSS変数', title:'CSS変数の基本', note:':root に --変数名 で登録、var() で呼び出す。',
+code:`/* ① 一番上に変数を登録（-- で始まる名前を自由につける） */
+:root {
+  --main-color: blue;
+}
+
+/* ② 使いたい場所では var(--変数名) で呼び出す */
+.custom-button {
+  background-color: var(--main-color);
+}
+.badge {
+  background-color: var(--main-color);
+}` },
+{ cat:'CSS変数', title:'課題用の :root', note:'アクセントカラーを1か所で管理。',
+code:`:root {
+  --accent-color: crimson; /* 深い赤色 */
+}` },
+{ cat:'CSS変数', title:'お知らせ・NEW の一括管理（全体コード）', note:'これまでの総まとめ。長いので腕試しに。',
+code:`:root {
+  --accent-color: rgb(50, 20, 220); /* ここがベース */
+}
+.custom-button {
+  display: block; /* ← block に変更して単独の段にする */
+  box-sizing: content-box;
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+  margin-bottom: 30px; /* ← 下の外側に30pxの隙間を作る */
+}
+.custom-button-2 {
+  display: inline-block;
+  box-sizing: border-box; /* ← ここだけ border-box に変更 */
+  width: 200px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+.red-text {
+  color: red;
+}
+body .custom-button {
+  background-color: orange;
+}
+.custom-button {
+  background-color: lightblue;
+}
+/* WordPressの初期スタイル（10点＋10点＝20点） */
+.wp-block-button .wp-block-button__link {
+  background-color: gray;
+  color: white;
+}
+/* 10点しかないため負けてしまう */
+.wp-block-button__link {
+  background-color: pink;
+}
+body .wp-block-button .wp-block-button__link {
+  background-color: var(--accent-color);
+}
+.card {
+  border: 2px solid #333;
+  padding: 20px;
+  background-color: #f9f9f9;
+  flex: 1;
+  position: relative;
+}
+.card-list {
+  display: flex;
+  gap: 20px;
+}
+/* 画面幅が768px以下のときだけ適用される */
+@media (max-width: 768px) {
+  .card-list {
+    flex-direction: column; /* 並び方向を縦（column）に変える */
+  }
+}
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: var(--accent-color);
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+}` },
+{ cat:'CSS変数', ng:true, title:'お知らせ一覧の実装例（途中の解答）', note:'「色名」の部分は実際の色に置き換える。',
+code:`.card-list {
+  display: flex;
+}
+@media (max-width: 768px) {
+  .card-list {
+    flex-direction: column;
+  }
+}
+:root {
+  --theme-color: 色名;
+}` },
+{ cat:'擬似要素', title:'見出しの左に縦線', note:'::before ＋ content: "" ＋ absolute。',
+code:`/* 見出し本体（親要素） */
+.section-title {
+  position: relative;   /* ① 縦線の基準枠にする */
+  padding-left: 16px;   /* ② 縦線が重ならないように左側に余白を空ける */
+}
+
+/* 見出しの直前に出現させる縦線（擬似要素） */
+.section-title::before {
+  content: "";          /* ③ これがないと表示されない！ */
+  position: absolute;   /* ④ 親（.section-title）の左端にピン留めする */
+  left: 0;
+  top: 0;
+  width: 4px;           /* 線の太さ */
+  height: 100%;         /* 見出しの高さに合わせる */
+  background-color: var(--accent-color); /* 前に作ったCSS変数もそのまま使える */
+}` },
+{ cat:'擬似要素', title:'ボタンの右端に矢印', note:'::after で右側に「＞」を置く。',
+code:`.arrow-btn {
+  display: inline-block;
+  position: relative;
+  padding: 12px 40px 12px 20px; /* 右側だけ40pxと広めに余白を空ける */
+  border: 2px solid #333;
+}
+
+.arrow-btn::after {
+  content: "＞";        /* 矢印の文字を入れる */
+  position: absolute;
+  right: 15px;          /* 右端から15pxの位置に配置 */
+}` },
+{ cat:'擬似要素', title:'矢印を左端に移動', note:'padding の左右と right → left を入れ替える。',
+code:`.arrow-btn {
+  display: inline-block;
+  position: relative;
+  padding: 12px 12px 12px 40px; /* 左側だけ40pxと広めに余白を空ける */
+  border: 2px solid #333;
+}
+
+.arrow-btn::after {
+  content: "＞"; /* 矢印の文字を入れる */
+  position: absolute;
+  left: 15px;
+}` },
+{ cat:'擬似要素', title:'リストの丸ポチ', note:'list-style: none ＋ ::before ＋ border-radius: 50%。',
+code:`/* ① リスト全体の初期の黒ポチの消去 */
+.custom-list {
+  list-style: none; /* 黒い点を消す */
+  padding-left: 0;  /* 初期の左余白をリセット */
+}
+
+/* ② リスト1行ごとの設定（親要素） */
+.custom-list li {
+  position: relative;
+  padding-left: 24px; /* 丸ポチ用のスペースを左に空ける */
+  margin-bottom: 8px;
+}
+
+/* ③ オリジナルの丸ポチ（擬似要素） */
+.custom-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;           /* 文字の高さに合うよう少し下げる */
+  width: 10px;        /* 丸の横幅 */
+  height: 10px;       /* 丸の高さ */
+  background-color: var(--accent-color);
+  border-radius: 50%; /* 四角い箱を「真円（丸）」に変える魔法の1行！ */
+}` },
+];
+
+/* ========== 保存まわり（使えない環境でも動くように） ========== */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let custom = store.get('cssType.custom', []);
+let bests  = store.get('cssType.best', {});
+let opts   = store.get('cssType.opts', { comments:false, indent:true, ng:false });
+
+/* ========== テキスト整形 ========== */
+function stripComments(src){
+  const out = [];
+  for (const raw of src.replace(/\r\n?/g, '\n').split('\n')){
+    const had = /\/\*/.test(raw);
+    const line = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+$/, '');
+    if (had && line.trim() === '') continue;   // コメントだけの行は消す
+    out.push(line);
+  }
+  return out.join('\n');
+}
+function buildTarget(src, withComments){
+  let t = src.replace(/\r\n?/g, '\n').replace(/\t/g, '  ');
+  t = withComments ? t.split('\n').map(l => l.replace(/\s+$/, '')).join('\n') : stripComments(t);
+  t = t.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+  return t;
+}
+// 自動で飛ばす文字（行頭のインデント・空行の改行）
+function buildAuto(t, autoIndent){
+  const a = new Array(t.length).fill(false);
+  if (!autoIndent) return a;
+  let lineStart = true;
+  for (let i = 0; i < t.length; i++){
+    const c = t[i];
+    if (c === '\n'){
+      if (i > 0 && t[i-1] === '\n') a[i] = true;   // 空行
+      lineStart = true;
+    } else if (c === ' ' && lineStart){
+      a[i] = true;
+    } else {
+      lineStart = false;
+    }
+  }
+  return a;
+}
+// 全角英数記号は半角と同じとみなす
+function norm(c){
+  const code = c.charCodeAt(0);
+  if (code >= 0xFF01 && code <= 0xFF5E) return String.fromCharCode(code - 0xFEE0);
+  if (c === '　') return ' ';
+  return c;
+}
+
+/* ========== 画面 ========== */
+const $ = id => document.getElementById(id);
+const codeEl = $('code'), input = $('hiddenInput'), wrap = $('editorWrap'), overlay = $('overlay');
+
+function allLessons(){
+  const base = LESSONS.map((l, i) => ({ ...l, key:'b' + i + ':' + l.title }));
+  const cus  = custom.map(l => ({ ...l, cat:'自分で追加', custom:true, key:'c:' + l.id }));
+  return base.concat(cus).filter(l => opts.ng || !l.ng);
+}
+let lessons = [], curIdx = 0;
+let T = '', auto = [], spans = [], pos = 0;
+let started = false, finished = false, t0 = 0, timer = null;
+let miss = 0, typed = 0, missMap = {}, missedAt = new Set();
+
+function renderList(){
+  lessons = allLessons();
+  const box = $('lessonList'); box.innerHTML = '';
+  let lastCat = null;
+  lessons.forEach((l, i) => {
+    if (l.cat !== lastCat){
+      const c = document.createElement('div'); c.className = 'cat'; c.textContent = l.cat; box.appendChild(c); lastCat = l.cat;
+    }
+    const d = document.createElement('div');
+    d.className = 'lesson' + (i === curIdx ? ' active' : '');
+    const b = bests[bestKey(l)];
+    d.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span><span class="t"></span>`
+      + (b ? `<span class="best">${b.cpm}cpm</span>` : '')
+      + (l.custom ? `<span class="del" title="削除">✕</span>` : '');
+    d.querySelector('.t').textContent = l.title;
+    if (l.ng){ const tag = document.createElement('span'); tag.className='ngtag'; tag.textContent='誤答例'; d.querySelector('.t').appendChild(tag); }
+    d.addEventListener('click', e => {
+      if (e.target.classList.contains('del')){
+        if (confirm(`「${l.title}」を削除しますか？`)){
+          custom = custom.filter(x => 'c:' + x.id !== l.key); store.set('cssType.custom', custom);
+          if (curIdx >= i && curIdx > 0) curIdx--;
+          renderList(); load(curIdx);
+        }
+        return;
+      }
+      load(i); focusInput();
+    });
+    box.appendChild(d);
+  });
+}
+function bestKey(l){ return l.key + (opts.comments ? '#c' : ''); }
+
+function load(i){
+  if (!lessons.length) return;
+  curIdx = Math.max(0, Math.min(i, lessons.length - 1));
+  const l = lessons[curIdx];
+  $('lTitle').textContent = `${String(curIdx+1).padStart(2,'0')}. ${l.title}`;
+  $('lNote').textContent = l.note || '';
+  T = buildTarget(l.code, opts.comments);
+  auto = buildAuto(T, opts.indent);
+  codeEl.innerHTML = ''; spans = [];
+  const frag = document.createDocumentFragment();
+  for (const ch of T){
+    const s = document.createElement('span');
+    if (ch === '\n'){ s.className = 'nl'; s.textContent = '\n'; }
+    else s.textContent = ch;
+    spans.push(s); frag.appendChild(s);
+  }
+  codeEl.appendChild(frag);
+  reset();
+  document.querySelectorAll('.lesson').forEach((el, k) => el.classList.toggle('active', k === curIdx));
+  const act = document.querySelector('.lesson.active'); if (act) act.scrollIntoView({ block:'nearest' });
+}
+function reset(){
+  clearInterval(timer); timer = null;
+  started = false; finished = false; pos = 0; miss = 0; typed = 0; missMap = {}; missedAt = new Set();
+  spans.forEach(s => s.classList.remove('ok','auto','miss','cur','flash'));
+  skipAuto(); setCursor(); updateStats();
+  wrap.scrollTop = 0;
+}
+function skipAuto(){
+  while (pos < T.length && auto[pos]){ spans[pos].classList.add('auto'); pos++; }
+}
+function setCursor(){
+  spans.forEach(s => s.classList.remove('cur'));
+  if (pos < spans.length){
+    const s = spans[pos]; s.classList.add('cur');
+    const r = s.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+    if (r.bottom > w.bottom - 60 || r.top < w.top + 20) s.scrollIntoView({ block:'center' });
+  }
+}
+
+function handleChar(c){
+  if (finished || pos >= T.length) return;
+  if (!started){ started = true; t0 = performance.now(); timer = setInterval(updateStats, 100); }
+  const exp = T[pos];
+  const s = spans[pos];
+  typed++;
+  if (norm(c) === norm(exp)){
+    s.classList.remove('cur','flash');
+    s.classList.add(missedAt.has(pos) ? 'miss' : 'ok');
+    pos++;
+    skipAuto();
+    if (pos >= T.length){ finish(); return; }
+    setCursor();
+  } else {
+    miss++;
+    missedAt.add(pos);
+    const label = exp === '\n' ? 'Enter' : exp === ' ' ? 'Space' : exp;
+    missMap[label] = (missMap[label] || 0) + 1;
+    s.classList.add('flash');
+    setTimeout(() => s.classList.remove('flash'), 160);
+  }
+  updateStats();
+}
+
+function elapsed(){ return started ? (performance.now() - t0) / 1000 : 0; }
+function correctCount(){ let n = 0; for (let i = 0; i < pos; i++) if (!auto[i]) n++; return n; }
+function totalCount(){ return auto.filter(a => !a).length; }
+function calc(){
+  const sec = elapsed(), ok = correctCount();
+  return {
+    sec,
+    cpm: sec > 0.5 ? Math.round(ok / sec * 60) : 0,
+    acc: typed ? Math.round((typed - miss) / typed * 1000) / 10 : 100,
+  };
+}
+function updateStats(){
+  const r = calc();
+  $('sTime').textContent = r.sec.toFixed(1);
+  $('sCpm').textContent = r.cpm;
+  $('sAcc').textContent = r.acc;
+  $('sMiss').textContent = miss;
+  $('bar').style.width = (totalCount() ? correctCount() / totalCount() * 100 : 0) + '%';
+}
+
+function finish(){
+  finished = true; clearInterval(timer); updateStats();
+  spans.forEach(s => s.classList.remove('cur'));
+  const r = calc(), l = lessons[curIdx], k = bestKey(l);
+  const prev = bests[k];
+  const isBest = !prev || r.cpm > prev.cpm;
+  if (isBest){ bests[k] = { cpm:r.cpm, acc:r.acc, sec:+r.sec.toFixed(1) }; store.set('cssType.best', bests); }
+  const score = r.cpm * (r.acc / 100);
+  $('resRank').textContent = score >= 300 ? '🏆 S' : score >= 200 ? '✨ A' : score >= 120 ? '👍 B' : '🌱 C';
+  $('resTitle').textContent = `「${l.title}」クリア！`;
+  $('rTime').textContent = r.sec.toFixed(1);
+  $('rCpm').textContent = r.cpm;
+  $('rAcc').textContent = r.acc;
+  $('rMiss').textContent = miss;
+  $('resBest').innerHTML = isBest
+    ? (prev ? `<span class="newbest">自己ベスト更新！</span>（前回 ${prev.cpm} 文字/分）` : `<span class="newbest">初クリア！</span>`)
+    : `自己ベスト：${prev.cpm} 文字/分（正確率 ${prev.acc}%）`;
+  const top = Object.entries(missMap).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  $('resMissKeys').textContent = top.length ? '苦手なキー：' + top.map(([k,v]) => `${k}（${v}）`).join('　') : 'ノーミス！すばらしい 🎉';
+  renderList();
+  $('resDlg').showModal();
+}
+
+/* ========== 入力処理（IMEにも対応） ========== */
+let composing = false;
+function flushInput(){
+  const v = input.value; input.value = '';
+  for (const ch of v) handleChar(ch === '\r' ? '\n' : ch);
+}
+input.addEventListener('compositionstart', () => composing = true);
+input.addEventListener('compositionend', () => { composing = false; flushInput(); });
+input.addEventListener('input', e => { if (!composing && !e.isComposing) flushInput(); });
+input.addEventListener('keydown', e => {
+  if (e.isComposing || composing) return;
+  if (e.key === 'Enter'){ e.preventDefault(); handleChar('\n'); }
+  else if (e.key === 'Tab'){ e.preventDefault(); if (!opts.indent){ handleChar(' '); handleChar(' '); } }
+  else if (e.key === 'Escape'){ e.preventDefault(); reset(); }
+  else if (e.key === 'Backspace'){ e.preventDefault(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight'){ e.preventDefault(); load(curIdx + 1); }
+  else if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft'){ e.preventDefault(); load(curIdx - 1); }
+});
+function focusInput(){ input.focus({ preventScroll:true }); }
+wrap.addEventListener('mousedown', e => { e.preventDefault(); focusInput(); });
+input.addEventListener('focus', () => { overlay.style.display = 'none'; wrap.classList.add('focused'); });
+input.addEventListener('blur',  () => { overlay.style.display = 'flex'; wrap.classList.remove('focused'); });
+
+/* ========== 結果ダイアログ ========== */
+$('resRetry').onclick = () => { $('resDlg').close(); reset(); focusInput(); };
+$('resNext').onclick  = () => { $('resDlg').close(); load(curIdx + 1); focusInput(); };
+$('resDlg').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); $('resNext').click(); }
+  else if (e.key === 'r' || e.key === 'R'){ e.preventDefault(); $('resRetry').click(); }
+});
+$('resDlg').addEventListener('cancel', () => setTimeout(focusInput, 0));
+
+/* ========== 自分のCSSを追加 ========== */
+$('addBtn').onclick = () => { $('addTitle').value = ''; $('addNote').value = ''; $('addCode').value = ''; $('addDlg').showModal(); };
+$('addCancel').onclick = () => $('addDlg').close();
+$('addSave').onclick = () => {
+  const code = $('addCode').value.trim();
+  if (!code){ $('addCode').focus(); return; }
+  custom.push({ id: Date.now().toString(36), title: $('addTitle').value.trim() || '自分で追加した問題', note: $('addNote').value.trim(), code });
+  store.set('cssType.custom', custom);
+  $('addDlg').close();
+  renderList(); load(lessons.length - 1); focusInput();
+};
+
+/* ========== オプション ========== */
+function bindOpt(id, key){
+  const el = $(id); el.checked = !!opts[key];
+  el.addEventListener('change', () => {
+    opts[key] = el.checked; store.set('cssType.opts', opts);
+    const curKey = lessons[curIdx] && lessons[curIdx].key;
+    renderList();
+    const ni = lessons.findIndex(l => l.key === curKey);
+    load(ni >= 0 ? ni : 0); focusInput();
+  });
+}
+bindOpt('optComments', 'comments');
+bindOpt('optIndent', 'indent');
+bindOpt('optNg', 'ng');
+
+renderList();
+load(0);
+</script>
+</body>
+</html>
